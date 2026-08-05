@@ -15,6 +15,14 @@
   box-shadow: 0 0 0 1px rgb(255 255 255 / 0.6);
 }
 
+/* 仕上がり確認中。枠は見せないが、触れて編集に戻せるよう当たり判定は残す */
+.concealed,
+.concealed:hover {
+  border-color: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
 .handle {
   position: absolute;
   width: 12px;

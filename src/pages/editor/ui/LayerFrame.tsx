@@ -11,7 +11,13 @@ import {
   resizeBox,
   rotateBox,
 } from '../lib/pointer-gesture'
-import { pinchActive, pushHistory, selectLayer, updateLayer } from '../model/editor'
+import {
+  pinchActive,
+  pushHistory,
+  selectLayer,
+  showFrames,
+  updateLayer,
+} from '../model/editor'
 import { MIN_LAYER_SIZE, type Layer } from '../model/layer'
 import styles from './LayerFrame.module.css'
 
@@ -30,11 +36,19 @@ export interface LayerFrameProps {
   layer: Layer
   scale: number
   selected: boolean
+  /** 仕上がり確認モード。枠は見せないが、触れたら編集に戻せるよう当たり判定は残す。 */
+  concealed: boolean
   /** ポインタ位置を画像ピクセル座標に変換する。 */
   toImagePoint: (event: PointerEvent) => Point
 }
 
-export function LayerFrame({ layer, scale, selected, toImagePoint }: LayerFrameProps) {
+export function LayerFrame({
+  layer,
+  scale,
+  selected,
+  concealed,
+  toImagePoint,
+}: LayerFrameProps) {
   const handles = layer.kind === 'emoji' ? CORNER_HANDLES : EDGE_HANDLES
 
   function beginGesture(
@@ -80,6 +94,15 @@ export function LayerFrame({ layer, scale, selected, toImagePoint }: LayerFrameP
   }
 
   const startMove = (event: JSX.TargetedPointerEvent<HTMLDivElement>) => {
+    if (concealed) {
+      // 枠を隠しているときに触れたら、編集に戻して選択するだけにする。
+      // ここで移動まで始めると、戻った瞬間に意図せず動いてしまう。
+      event.stopPropagation()
+      event.preventDefault()
+      showFrames.value = true
+      selectLayer(layer.id)
+      return
+    }
     const start: Box = layer
     beginGesture(event, (_, delta) => updateLayer(layer.id, moveBox(start, delta)))
   }
@@ -107,7 +130,11 @@ export function LayerFrame({ layer, scale, selected, toImagePoint }: LayerFrameP
   return (
     <div
       data-layer-id={layer.id}
-      class={cx(styles.frame, selected && styles.selected)}
+      class={cx(
+        styles.frame,
+        selected && styles.selected,
+        concealed && styles.concealed,
+      )}
       style={{
         left: `${(layer.cx - layer.width / 2) * scale}px`,
         top: `${(layer.cy - layer.height / 2) * scale}px`,

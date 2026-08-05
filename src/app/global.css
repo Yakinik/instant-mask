@@ -55,6 +55,8 @@ body {
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   overscroll-behavior: none;
+  /* ダブルタップでのページ拡大を抑える（ステージ側は touch-action: none） */
+  touch-action: manipulation;
 }
 
 button,

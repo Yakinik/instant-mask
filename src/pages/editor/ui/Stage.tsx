@@ -26,6 +26,7 @@ import {
   pinchActive,
   pushHistory,
   selectLayer,
+  selectedLayer,
   selectedLayerId,
   showFrames,
   updateLayer,
@@ -69,6 +70,7 @@ export function Stage({ image }: { image: LoadedImage }) {
   // 指を離す順序の都合で pinchRef は最後の 1 本が残った時点で消える。
   // 「このタッチ列でピンチが起きたか」は別に覚えておき、全部離れるまで領域確定を抑える。
   const pinchedRef = useRef(false)
+  const wheelHistoryRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [viewport, setViewport] = useState({ width: 0, height: 0 })
   const [view, setView] = useState<ViewState>(FIT_VIEW)
@@ -149,22 +151,47 @@ export function Stage({ image }: { image: LoadedImage }) {
   useEffect(() => {
     const element = containerRef.current
     if (!element) return
+
+    // ホイールを回している間ずっと履歴を積まない。操作が途切れてから次の 1 回だけ積む。
+    const pushHistoryOnce = () => {
+      if (wheelHistoryRef.current === null) pushHistory()
+      else clearTimeout(wheelHistoryRef.current)
+      wheelHistoryRef.current = setTimeout(() => {
+        wheelHistoryRef.current = null
+      }, 400)
+    }
+
     const onWheel = (event: WheelEvent) => {
-      // トラックパッドのピンチは ctrlKey 付きのホイールとして届く
-      if (event.ctrlKey || event.metaKey) {
+      // 拡縮にホイールを使うので、パンは Shift 併用に逃がす
+      if (event.shiftKey) {
+        if (resolved.width <= viewport.width && resolved.height <= viewport.height) {
+          return
+        }
         event.preventDefault()
-        setView(
-          zoomAt(
-            activeView,
-            wheelZoomFactor(event.deltaY),
-            toAnchor(event.clientX, event.clientY),
-          ),
-        )
+        setView(panBy(activeView, -event.deltaX, -event.deltaY))
         return
       }
-      if (resolved.width <= viewport.width && resolved.height <= viewport.height) return
       event.preventDefault()
-      setView(panBy(activeView, -event.deltaX, -event.deltaY))
+      const target = selectedLayer.value
+      // 選択中のものがあればそれを拡縮する。
+      // ⌘/Ctrl 併用（トラックパッドのピンチ）は選択中でも画像ビューを拡縮する。
+      if (target && !event.ctrlKey && !event.metaKey) {
+        // レイヤは微調整したいことが多いので、ビューより効きを控えめにする
+        const factor = wheelZoomFactor(event.deltaY * 0.45)
+        pushHistoryOnce()
+        updateLayer(target.id, {
+          width: Math.max(MIN_LAYER_SIZE, target.width * factor),
+          height: Math.max(MIN_LAYER_SIZE, target.height * factor),
+        })
+        return
+      }
+      setView(
+        zoomAt(
+          activeView,
+          wheelZoomFactor(event.deltaY),
+          toAnchor(event.clientX, event.clientY),
+        ),
+      )
     }
     element.addEventListener('wheel', onWheel, { passive: false })
     return () => element.removeEventListener('wheel', onWheel)
@@ -338,16 +365,16 @@ export function Stage({ image }: { image: LoadedImage }) {
           class={cx(styles.overlay, !framesVisible && styles.preview)}
           onPointerDown={startDraft}
         >
-          {framesVisible &&
-            layerList.map((layer) => (
-              <LayerFrame
-                key={layer.id}
-                layer={layer}
-                scale={scale}
-                selected={layer.id === selectedId}
-                toImagePoint={toImagePoint}
-              />
-            ))}
+          {layerList.map((layer) => (
+            <LayerFrame
+              key={layer.id}
+              layer={layer}
+              scale={scale}
+              selected={framesVisible && layer.id === selectedId}
+              concealed={!framesVisible}
+              toImagePoint={toImagePoint}
+            />
+          ))}
           {draftBox && (
             <div
               class={cx(styles.draft, maskShape.value === 'ellipse' && styles.ellipse)}
