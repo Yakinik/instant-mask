@@ -11,8 +11,11 @@ import {
 import {
   emojiPickerOpen,
   image,
+  layers,
+  moveLayer,
   pushHistory,
   removeLayer,
+  selectedLayerIndex,
   updateLayer,
 } from '../model/editor'
 import { measureStampWidth } from '../model/emoji'
@@ -24,6 +27,8 @@ export function LayerInspector({ layer }: { layer: Layer }) {
   const maxEmojiSize = current
     ? Math.round(Math.min(current.width, current.height) * 1.5)
     : 600
+  // 配列の末尾ほど前面。端では移動ボタンを無効にする
+  const index = selectedLayerIndex.value
 
   return (
     <>
@@ -90,6 +95,26 @@ export function LayerInspector({ layer }: { layer: Layer }) {
           />
         </>
       )}
+      <Button
+        square
+        variant="ghost"
+        title="背面へ"
+        aria-label="背面へ"
+        disabled={index <= 0}
+        onClick={() => moveLayer(layer.id, -1)}
+      >
+        <Icon name="back" />
+      </Button>
+      <Button
+        square
+        variant="ghost"
+        title="前面へ"
+        aria-label="前面へ"
+        disabled={index < 0 || index >= layers.value.length - 1}
+        onClick={() => moveLayer(layer.id, 1)}
+      >
+        <Icon name="front" />
+      </Button>
       <Button
         variant="ghost"
         onClick={() => {

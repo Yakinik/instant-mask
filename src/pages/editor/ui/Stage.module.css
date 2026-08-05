@@ -43,6 +43,11 @@
   touch-action: none;
 }
 
+/* 枠を隠している間は仕上がり確認モード。範囲ドラッグはしない */
+.preview {
+  cursor: default;
+}
+
 .draft {
   position: absolute;
   border: 1px solid var(--accent);

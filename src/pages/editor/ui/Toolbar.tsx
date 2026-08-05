@@ -20,6 +20,7 @@ import {
   maskStrength,
   redo,
   selectedLayer,
+  showFrames,
   undo,
 } from '../model/editor'
 import { LayerInspector } from './LayerInspector'
@@ -84,6 +85,18 @@ export function Toolbar() {
         <Button onClick={() => (emojiPickerOpen.value = true)}>
           <Icon name="plus" />
           絵文字・文字
+        </Button>
+        <Button
+          square
+          variant={showFrames.value ? 'default' : 'ghost'}
+          title={showFrames.value ? '枠を隠して仕上がりを見る' : '枠を表示して編集に戻る'}
+          aria-label={showFrames.value ? '枠を隠す' : '枠を表示'}
+          aria-pressed={showFrames.value}
+          onClick={() => {
+            showFrames.value = !showFrames.value
+          }}
+        >
+          <Icon name="frame" />
         </Button>
         <Button
           square
