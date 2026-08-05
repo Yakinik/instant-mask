@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks'
 
-import { APP_NAME, APP_TAGLINE, REPO_URL } from '@/shared/config/app'
+import { APP_NAME, APP_TAGLINE } from '@/shared/config/app'
 import { Button, Icon } from '@/shared/ui'
 
 import { exportImage } from '../lib/export-image'
@@ -92,14 +92,15 @@ export function EditorPage() {
           </div>
         </div>
         <div class={styles.actions}>
-          <a class={styles.repo} href={REPO_URL} target="_blank" rel="noreferrer noopener">
-            GitHub
-          </a>
           {current && (
             <>
-              <Button onClick={() => void acceptImageFromDialog()}>
+              <Button
+                title="画像を変更"
+                aria-label="画像を変更"
+                onClick={() => void acceptImageFromDialog()}
+              >
                 <Icon name="image" />
-                画像を変更
+                <span class={styles.actionLabel}>画像を変更</span>
               </Button>
               <Button variant="primary" disabled={saving} onClick={() => void save()}>
                 <Icon name="download" />

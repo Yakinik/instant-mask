@@ -37,6 +37,7 @@
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
 
 .tagline {
@@ -53,17 +54,6 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 8px;
-}
-
-.repo {
-  color: var(--muted);
-  font-size: 12px;
-  text-decoration: none;
-}
-
-.repo:hover {
-  color: var(--fg);
-  text-decoration: underline;
 }
 
 .main {
@@ -86,5 +76,14 @@
 @media (max-width: 640px) {
   .tagline {
     display: none;
+  }
+
+  /* 狭い画面ではヘッダーのボタンをアイコンだけにしてタイトルの幅を確保する */
+  .actionLabel {
+    display: none;
+  }
+
+  .actions {
+    gap: 6px;
   }
 }

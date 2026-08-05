@@ -9,7 +9,8 @@ export interface SliderProps {
   step?: number
   valueText?: string
   onInput: (value: number) => void
-  class?: string
+  // CSS Modules のクラス名は string | undefined になるため undefined を明示的に許す
+  class?: string | undefined
 }
 
 export function Slider({
