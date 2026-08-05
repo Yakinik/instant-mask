@@ -1,8 +1,11 @@
 import {
   type ImageSource,
+  boxBounds,
+  clampRect,
   clipToBox,
   drawBlurred,
   drawPixelated,
+  drawPixelatedRegion,
   insetBox,
   scaleBox,
   supportsCanvasBlur,
@@ -13,6 +16,7 @@ import { type EmojiLayer, isEmojiOnly } from '../model/emoji'
 import type { Layer } from '../model/layer'
 import {
   type MaskLayer,
+  backdropCellFor,
   blurRadiusFor,
   featherFor,
   pixelCellFor,
@@ -61,13 +65,16 @@ function paintEffect(
     const radius = blurRadiusFor(layer) * scale
     // Canvas のぼかしは画像の外側を透明として扱うため、画像の縁に近い領域では
     // 下に描かれている元画像が透ける。先に不透明なモザイクを敷いて防ぐ。
+    // セルは強さに依存させない（連動させると見た目が段階的に飛ぶ）。
     // フォールバックのぼかし（縮小・拡大）は不透明なので下敷きは要らない。
     if (supportsCanvasBlur()) {
-      drawPixelated(ctx, image, width, height, Math.max(radius, 4))
+      drawPixelated(ctx, image, width, height, backdropCellFor(layer) * scale)
     }
     drawBlurred(ctx, image, width, height, radius)
   } else {
-    drawPixelated(ctx, image, width, height, pixelCellFor(layer) * scale)
+    // モザイクは領域の外接矩形を基準に切る（画像全体で切ると粗さを変えるたびに位相がずれる）
+    const area = clampRect(boxBounds(scaleBox(layer, scale)), width, height)
+    drawPixelatedRegion(ctx, image, scale, area, pixelCellFor(layer) * scale)
   }
 }
 

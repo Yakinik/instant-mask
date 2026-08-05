@@ -1,4 +1,4 @@
-import { type Box, boxCorners } from './geometry'
+import { type Box, type Rect, boxCorners } from './geometry'
 
 export type ClipShape = 'rect' | 'ellipse'
 
@@ -91,6 +91,45 @@ export function drawPixelated(
   const smoothing = ctx.imageSmoothingEnabled
   ctx.imageSmoothingEnabled = false
   ctx.drawImage(small.canvas, 0, 0, cols, rows, 0, 0, width, height)
+  ctx.imageSmoothingEnabled = smoothing
+}
+
+/**
+ * 指定範囲だけをモザイク化して同じ場所へ描く。
+ *
+ * 画像全体を分割してから切り抜くと、粗さを変えるたびにセル境界の位相が範囲に対してずれ、
+ * 見た目が行ったり来たりする。範囲の左上からセルを切ることでそれを防ぐ。
+ *
+ * `area` は描画先の座標系、`sourceScale` はソース 1px あたりの描画先ピクセル数。
+ */
+export function drawPixelatedRegion(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  sourceScale: number,
+  area: Rect,
+  cell: number,
+): void {
+  if (area.width <= 0 || area.height <= 0 || sourceScale <= 0) return
+  const cols = Math.max(1, Math.round(area.width / Math.max(cell, 1)))
+  const rows = Math.max(1, Math.round(area.height / Math.max(cell, 1)))
+  const small = getScratch(cols, rows)
+  if (!small) return
+  small.imageSmoothingEnabled = true
+  small.drawImage(
+    source,
+    area.x / sourceScale,
+    area.y / sourceScale,
+    area.width / sourceScale,
+    area.height / sourceScale,
+    0,
+    0,
+    cols,
+    rows,
+  )
+
+  const smoothing = ctx.imageSmoothingEnabled
+  ctx.imageSmoothingEnabled = false
+  ctx.drawImage(small.canvas, 0, 0, cols, rows, area.x, area.y, area.width, area.height)
   ctx.imageSmoothingEnabled = smoothing
 }
 

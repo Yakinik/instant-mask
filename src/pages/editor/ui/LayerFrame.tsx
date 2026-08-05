@@ -11,7 +11,7 @@ import {
   resizeBox,
   rotateBox,
 } from '../lib/pointer-gesture'
-import { pushHistory, selectLayer, updateLayer } from '../model/editor'
+import { pinchActive, pushHistory, selectLayer, updateLayer } from '../model/editor'
 import { MIN_LAYER_SIZE, type Layer } from '../model/layer'
 import styles from './LayerFrame.module.css'
 
@@ -58,6 +58,8 @@ export function LayerFrame({ layer, scale, selected, toImagePoint }: LayerFrameP
     // 実際に動かし始めた時点で 1 回だけ履歴を積む（クリックだけでは積まない）。
     let changed = false
     const move = (pointer: PointerEvent) => {
+      // ピンチが始まったら単指の操作は止める（拡縮されるのは常に 1 つだけ）
+      if (pinchActive.value) return
       if (!changed) {
         changed = true
         pushHistory()
@@ -104,6 +106,7 @@ export function LayerFrame({ layer, scale, selected, toImagePoint }: LayerFrameP
 
   return (
     <div
+      data-layer-id={layer.id}
       class={cx(styles.frame, selected && styles.selected)}
       style={{
         left: `${(layer.cx - layer.width / 2) * scale}px`,
