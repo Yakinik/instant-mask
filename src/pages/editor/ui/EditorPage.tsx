@@ -14,17 +14,36 @@ import {
   removeLayer,
   selectLayer,
   selectedLayerId,
+  stampStyleOpen,
   undo,
 } from '../model/editor'
+import { restoreSession, startSessionAutosave } from '../model/session'
 import { DropZone } from './DropZone'
 import styles from './EditorPage.module.css'
 import { EmojiPicker } from './EmojiPicker'
 import { Stage } from './Stage'
+import { StampStyleDialog } from './StampStyleDialog'
 import { Toolbar } from './Toolbar'
 
 export function EditorPage() {
   const current = image.value
   const [saving, setSaving] = useState(false)
+  // 復元が終わるまでは何も出さない（一瞬 DropZone が見えるのを防ぐ）
+  const [restoring, setRestoring] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    let stopAutosave: (() => void) | undefined
+    void restoreSession().finally(() => {
+      if (cancelled) return
+      setRestoring(false)
+      stopAutosave = startSessionAutosave()
+    })
+    return () => {
+      cancelled = true
+      stopAutosave?.()
+    }
+  }, [])
 
   useEffect(() => {
     const onPaste = (event: ClipboardEvent) => {
@@ -52,6 +71,7 @@ export function EditorPage() {
       if (event.key === 'Escape') {
         selectLayer(null)
         emojiPickerOpen.value = false
+        stampStyleOpen.value = false
         return
       }
       if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -126,11 +146,12 @@ export function EditorPage() {
       )}
 
       <main class={styles.main}>
-        {current ? <Stage image={current} /> : <DropZone />}
+        {restoring ? null : current ? <Stage image={current} /> : <DropZone />}
       </main>
 
       {current && <Toolbar />}
       <EmojiPicker />
+      <StampStyleDialog />
     </div>
   )
 }

@@ -12,7 +12,7 @@ import {
 } from '@/shared/lib'
 
 import { EMOJI_FONT_STACK } from '../config/emoji-presets'
-import { type EmojiLayer, isEmojiOnly } from '../model/emoji'
+import { DEFAULT_STAMP_STYLE, type EmojiLayer, withAlpha } from '../model/emoji'
 import type { Layer } from '../model/layer'
 import {
   type MaskLayer,
@@ -143,20 +143,22 @@ function drawEmoji(
 ): void {
   const box = scaleBox(layer, scale)
   const fontSize = Math.max(box.height, 1)
+  const style = layer.style ?? DEFAULT_STAMP_STYLE
   ctx.save()
   ctx.translate(box.cx, box.cy)
   ctx.rotate(box.rotation)
   ctx.font = `${fontSize}px ${EMOJI_FONT_STACK}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  if (!isEmojiOnly(layer.char)) {
-    // 文字は背景に埋もれないよう白字＋黒フチにする
-    ctx.lineWidth = Math.max(1, fontSize * 0.14)
+  // 透過度は globalAlpha で掛ける。カラー絵文字は fillStyle が効かないため。
+  ctx.globalAlpha = Math.min(100, Math.max(0, style.opacity)) / 100
+  if (style.strokeWidth > 0) {
+    ctx.lineWidth = Math.max(0.5, (fontSize * style.strokeWidth) / 100)
     ctx.lineJoin = 'round'
-    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)'
+    ctx.strokeStyle = withAlpha(style.strokeColor, style.strokeOpacity)
     ctx.strokeText(layer.char, 0, 0)
-    ctx.fillStyle = '#ffffff'
   }
+  ctx.fillStyle = style.color
   ctx.fillText(layer.char, 0, 0)
   ctx.restore()
 }

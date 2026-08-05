@@ -3,6 +3,7 @@ import { computed, signal } from '@preact/signals'
 import type { LoadedImage } from '@/shared/lib'
 
 import type { Layer } from './layer'
+import { DEFAULT_STAMP_STYLE, type StampStyle } from './emoji'
 import {
   DEFAULT_MASK_SOFTNESS,
   DEFAULT_MASK_STRENGTH,
@@ -30,6 +31,10 @@ export const maskShape = signal<MaskShape>('rect')
 export const maskStrength = signal(DEFAULT_MASK_STRENGTH)
 export const maskSoftness = signal(DEFAULT_MASK_SOFTNESS)
 
+/** 次に作るスタンプの見た目。レイヤ未選択のときはこれを編集する。 */
+export const stampStyle = signal<StampStyle>({ ...DEFAULT_STAMP_STYLE })
+export const stampStyleOpen = signal(false)
+
 const undoStack = signal<Layer[][]>([])
 const redoStack = signal<Layer[][]>([])
 
@@ -50,6 +55,18 @@ export function setImage(next: LoadedImage): void {
   if (current instanceof ImageBitmap) current.close()
   image.value = next
   layers.value = []
+  selectedLayerId.value = null
+  undoStack.value = []
+  redoStack.value = []
+  errorMessage.value = null
+}
+
+/** 保存しておいた編集状態から復帰する。setImage と違いレイヤを消さない。 */
+export function restoreState(next: LoadedImage, restored: Layer[]): void {
+  const current = image.value?.source
+  if (current instanceof ImageBitmap) current.close()
+  image.value = next
+  layers.value = restored
   selectedLayerId.value = null
   undoStack.value = []
   redoStack.value = []

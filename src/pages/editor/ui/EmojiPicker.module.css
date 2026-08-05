@@ -81,3 +81,38 @@
 .emoji:hover {
   background: var(--panel-alt);
 }
+
+.recentList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recentItem {
+  max-width: 100%;
+  min-height: 34px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel-alt);
+  color: var(--fg);
+  font-size: 15px;
+  font-family:
+    'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', system-ui, sans-serif;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.recentItem:hover {
+  border-color: var(--accent);
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 10px;
+  border-top: 1px solid var(--line);
+}
