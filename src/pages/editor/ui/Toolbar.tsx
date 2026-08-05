@@ -3,6 +3,8 @@ import { Button, Icon, SegmentedControl, Slider } from '@/shared/ui'
 import {
   EFFECT_OPTIONS,
   SHAPE_OPTIONS,
+  SOFTNESS_MAX,
+  SOFTNESS_MIN,
   STRENGTH_MAX,
   STRENGTH_MIN,
 } from '../config/mask-options'
@@ -14,6 +16,7 @@ import {
   layers,
   maskEffect,
   maskShape,
+  maskSoftness,
   maskStrength,
   redo,
   selectedLayer,
@@ -52,10 +55,17 @@ function MaskDefaults() {
           maskStrength.value = strength
         }}
       />
-      <Button onClick={() => (emojiPickerOpen.value = true)}>
-        <Icon name="plus" />
-        絵文字
-      </Button>
+      <Slider
+        class={styles.slider}
+        label="柔らかさ"
+        min={SOFTNESS_MIN}
+        max={SOFTNESS_MAX}
+        value={maskSoftness.value}
+        valueText={`${maskSoftness.value}`}
+        onInput={(softness) => {
+          maskSoftness.value = softness
+        }}
+      />
       <span class={styles.hint}>ドラッグで範囲指定・ピンチで拡大</span>
     </>
   )
@@ -70,6 +80,11 @@ export function Toolbar() {
         {selected ? <LayerInspector layer={selected} /> : <MaskDefaults />}
       </div>
       <div class={styles.actions}>
+        {/* 領域を選択中でも追加できるよう、常に出しておく */}
+        <Button onClick={() => (emojiPickerOpen.value = true)}>
+          <Icon name="plus" />
+          絵文字・文字
+        </Button>
         <Button
           square
           variant="ghost"

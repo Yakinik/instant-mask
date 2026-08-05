@@ -35,8 +35,9 @@ Feature-Sliced Design v2.1。`app` / `pages/editor` / `shared` の 3 レイヤ�
 
 ## 軽量方針
 
-公開バンドルは **gzip 20KB 以内**を上限とする（現在 19.9KB。残り 0.1KB しかないので、
-次に機能を足すときは既存実装の見直しか、上限そのものの見直しが要る）。
+公開バンドルは **gzip 25KB 以内**を上限とする（現在 21.0KB）。
+上限に達したら、まず実装を見直す。それでも収まらないときはユーザーに相談すること
+（勝手に上限を引き上げない）。
 
 - 依存を増やさない。UI ライブラリ、アイコンライブラリ、画像処理ライブラリは使わない。
 - Web フォント・アイコンフォント・画像アセットを追加しない。アイコンはインライン SVG、
@@ -62,6 +63,16 @@ Feature-Sliced Design v2.1。`app` / `pages/editor` / `shared` の 3 レイヤ�
 - TypeScript 7 では `baseUrl` が使えない。`paths` は `./src/*` のように相対で書く。
 - CSS Modules の `styles.foo` は `string | undefined` になる。`exactOptionalPropertyTypes`
   が有効なので、UI kit の `class` prop は `string | undefined` と書く（`string` では渡せない）。
+
+## プロセスの停止
+
+**`pkill -f vite` のようなパターンマッチでプロセスを一括終了しない。** 他のセッションや
+他プロジェクトで動いている開発サーバーまで巻き添えで落ちる（実際に事故を起こした）。
+
+- バックグラウンドで起動した開発サーバーは、その起動タスクを止めて終了させる
+- 直接止めるときは `lsof -nP -iTCP:<port> -sTCP:LISTEN` で PID を特定し、
+  そのコマンドラインがこのリポジトリのパスであることを確認してから `kill <pid>` する
+- `killall` も同様に使わない
 
 ## 検証
 

@@ -30,6 +30,23 @@
   border-bottom: 1px solid var(--line);
 }
 
+.form {
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px 4px;
+}
+
+.input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-alt);
+  font-size: 16px; /* iOS で入力時に拡大されないよう 16px 以上にする */
+}
+
 .body {
   padding: 8px 14px 14px;
   overflow-y: auto;

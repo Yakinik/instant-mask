@@ -14,3 +14,6 @@ export const SHAPE_OPTIONS: readonly SegmentedOption<MaskShape>[] = [
 
 export const STRENGTH_MIN = 5
 export const STRENGTH_MAX = 100
+
+export const SOFTNESS_MIN = 0
+export const SOFTNESS_MAX = 100

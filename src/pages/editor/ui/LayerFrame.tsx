@@ -49,7 +49,11 @@ export function LayerFrame({ layer, scale, selected, toImagePoint }: LayerFrameP
     const target = event.currentTarget
     const originX = event.clientX
     const originY = event.clientY
-    target.setPointerCapture(event.pointerId)
+    try {
+      target.setPointerCapture(event.pointerId)
+    } catch {
+      // キャプチャできない環境でも、要素内のドラッグは追えるので続行する
+    }
 
     // 実際に動かし始めた時点で 1 回だけ履歴を積む（クリックだけでは積まない）。
     let changed = false

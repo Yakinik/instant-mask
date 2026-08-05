@@ -59,6 +59,15 @@ export function scaleBox(box: Box, scale: number): Box {
   }
 }
 
+/** 四辺を内側へ縮めたボックスを返す（境界をぼかす段階描画に使う）。 */
+export function insetBox(box: Box, inset: number): Box {
+  return {
+    ...box,
+    width: box.width - inset * 2,
+    height: box.height - inset * 2,
+  }
+}
+
 /** 2 点から回転なしのボックスを作る。 */
 export function boxFromPoints(a: Point, b: Point): Box {
   return {

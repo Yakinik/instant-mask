@@ -3,7 +3,12 @@ import { computed, signal } from '@preact/signals'
 import type { LoadedImage } from '@/shared/lib'
 
 import type { Layer } from './layer'
-import { DEFAULT_MASK_STRENGTH, type MaskEffect, type MaskShape } from './mask'
+import {
+  DEFAULT_MASK_SOFTNESS,
+  DEFAULT_MASK_STRENGTH,
+  type MaskEffect,
+  type MaskShape,
+} from './mask'
 
 const HISTORY_LIMIT = 50
 
@@ -19,6 +24,7 @@ export const emojiPickerOpen = signal(false)
 export const maskEffect = signal<MaskEffect>('blur')
 export const maskShape = signal<MaskShape>('rect')
 export const maskStrength = signal(DEFAULT_MASK_STRENGTH)
+export const maskSoftness = signal(DEFAULT_MASK_SOFTNESS)
 
 const undoStack = signal<Layer[][]>([])
 const redoStack = signal<Layer[][]>([])
