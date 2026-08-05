@@ -19,6 +19,8 @@ export const selectedLayerId = signal<string | null>(null)
 /** 読み込み失敗などの通知。表示したら null に戻す。 */
 export const errorMessage = signal<string | null>(null)
 export const emojiPickerOpen = signal(false)
+/** 領域の枠とハンドルを表示するか。false の間は仕上がり確認用に操作も止める。 */
+export const showFrames = signal(true)
 
 /** 次に作るマスクの既定設定。 */
 export const maskEffect = signal<MaskEffect>('blur')
@@ -76,6 +78,25 @@ export function updateLayer(id: string, patch: Partial<Layer>): void {
   layers.value = layers.value.map((layer) =>
     layer.id === id ? ({ ...layer, ...patch } as Layer) : layer,
   )
+}
+
+/** 選択レイヤが配列の何番目か。末尾ほど前面に描かれる。 */
+export const selectedLayerIndex = computed(() =>
+  layers.value.findIndex((layer) => layer.id === selectedLayerId.value),
+)
+
+/** 重なり順を 1 つ動かす。direction は 1 で前面、-1 で背面。 */
+export function moveLayer(id: string, direction: 1 | -1): void {
+  const list = layers.value
+  const index = list.findIndex((layer) => layer.id === id)
+  const target = index + direction
+  const moved = list[index]
+  if (index < 0 || !moved || target < 0 || target >= list.length) return
+  pushHistory()
+  const reordered = [...list]
+  reordered.splice(index, 1)
+  reordered.splice(target, 0, moved)
+  layers.value = reordered
 }
 
 export function removeLayer(id: string): void {

@@ -26,6 +26,7 @@ import {
   maskStrength,
   selectLayer,
   selectedLayerId,
+  showFrames,
 } from '../model/editor'
 import { MIN_LAYER_SIZE } from '../model/layer'
 import { createMaskLayer } from '../model/mask'
@@ -53,6 +54,7 @@ export function Stage({ image }: { image: LoadedImage }) {
 
   const layerList = layers.value
   const selectedId = selectedLayerId.value
+  const framesVisible = showFrames.value
 
   useLayoutEffect(() => {
     const element = containerRef.current
@@ -187,6 +189,8 @@ export function Stage({ image }: { image: LoadedImage }) {
 
   const startDraft = (event: JSX.TargetedPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return
+    // 枠を隠している間は仕上がり確認用。誤って領域が増えないよう作成させない
+    if (!framesVisible) return
     if (pointersRef.current.size >= 2) return
     // 触れている指が無い = マウスなどの単独ジェスチャ。前のピンチの痕跡は消しておく
     // （マウスの pointerdown はタッチ用の追跡を通らないため、ここで面倒を見る）
@@ -258,16 +262,20 @@ export function Stage({ image }: { image: LoadedImage }) {
           class={styles.canvas}
           style={{ width: `${resolved.width}px`, height: `${resolved.height}px` }}
         />
-        <div class={styles.overlay} onPointerDown={startDraft}>
-          {layerList.map((layer) => (
-            <LayerFrame
-              key={layer.id}
-              layer={layer}
-              scale={scale}
-              selected={layer.id === selectedId}
-              toImagePoint={toImagePoint}
-            />
-          ))}
+        <div
+          class={cx(styles.overlay, !framesVisible && styles.preview)}
+          onPointerDown={startDraft}
+        >
+          {framesVisible &&
+            layerList.map((layer) => (
+              <LayerFrame
+                key={layer.id}
+                layer={layer}
+                scale={scale}
+                selected={layer.id === selectedId}
+                toImagePoint={toImagePoint}
+              />
+            ))}
           {draftBox && (
             <div
               class={cx(styles.draft, maskShape.value === 'ellipse' && styles.ellipse)}
