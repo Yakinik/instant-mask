@@ -21,6 +21,8 @@ export const errorMessage = signal<string | null>(null)
 export const emojiPickerOpen = signal(false)
 /** 領域の枠とハンドルを表示するか。false の間は仕上がり確認用に操作も止める。 */
 export const showFrames = signal(true)
+/** ピンチ中は単指のドラッグを止め、拡縮の対象が 1 つだけになるようにする。 */
+export const pinchActive = signal(false)
 
 /** 次に作るマスクの既定設定。 */
 export const maskEffect = signal<MaskEffect>('blur')

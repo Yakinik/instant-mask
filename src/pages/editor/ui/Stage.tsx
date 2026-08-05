@@ -1,12 +1,11 @@
 import type { JSX } from 'preact'
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 
-import { type LoadedImage, type Point, boxFromPoints, cx } from '@/shared/lib'
+import { type Box, type LoadedImage, type Point, boxFromPoints, cx } from '@/shared/lib'
 
 import { renderScene } from '../lib/scene'
 import {
   FIT_VIEW,
-  type PinchAnchor,
   type ViewState,
   applyPinch,
   isZoomed,
@@ -24,9 +23,12 @@ import {
   maskShape,
   maskSoftness,
   maskStrength,
+  pinchActive,
+  pushHistory,
   selectLayer,
   selectedLayerId,
   showFrames,
+  updateLayer,
 } from '../model/editor'
 import { MIN_LAYER_SIZE } from '../model/layer'
 import { createMaskLayer } from '../model/mask'
@@ -38,12 +40,32 @@ interface DraftRegion {
   current: Point
 }
 
+interface TrackedPointer {
+  point: Point
+  /** 指が置かれたレイヤ。空き領域なら null。 */
+  layerId: string | null
+}
+
+/**
+ * ピンチの対象。開始時にどちらかへ確定させ、ジェスチャ中は切り替えない。
+ * これで「拡縮されるのは常に 1 つだけ」を保証する。
+ */
+type PinchTarget =
+  | { kind: 'view'; view: ViewState; anchor: Point; distance: number }
+  | { kind: 'layer'; layerId: string; box: Box; center: Point; distance: number }
+
+function layerIdFromEvent(event: Event): string | null {
+  const target = event.target
+  if (!(target instanceof Element)) return null
+  return target.closest('[data-layer-id]')?.getAttribute('data-layer-id') ?? null
+}
+
 export function Stage({ image }: { image: LoadedImage }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const surfaceRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const pointersRef = useRef(new Map<number, Point>())
-  const pinchRef = useRef<PinchAnchor | null>(null)
+  const pointersRef = useRef(new Map<number, TrackedPointer>())
+  const pinchRef = useRef<PinchTarget | null>(null)
   // 指を離す順序の都合で pinchRef は最後の 1 本が残った時点で消える。
   // 「このタッチ列でピンチが起きたか」は別に覚えておき、全部離れるまで領域確定を抑える。
   const pinchedRef = useRef(false)
@@ -148,43 +170,93 @@ export function Stage({ image }: { image: LoadedImage }) {
     return () => element.removeEventListener('wheel', onWheel)
   }, [activeView, resolved.width, resolved.height, viewport.width, viewport.height])
 
+  const endPinch = () => {
+    pinchRef.current = null
+    pinchActive.value = false
+  }
+
   const trackPointerDown = (event: JSX.TargetedPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'touch') return
     const pointers = pointersRef.current
     // 指が 1 本もない状態からの開始 = 新しいジェスチャ
     if (pointers.size === 0) pinchedRef.current = false
-    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
+    pointers.set(event.pointerId, {
+      point: { x: event.clientX, y: event.clientY },
+      layerId: framesVisible ? layerIdFromEvent(event) : null,
+    })
     if (pointers.size !== 2) return
-    const [first, second] = [...pointers.values()]
+
+    const tracked = [...pointers.values()]
+    const [first, second] = tracked
     if (!first || !second) return
     // 2 本目が触れた時点で範囲ドラッグは取り消し、ピンチに切り替える
     pinchedRef.current = true
+    pinchActive.value = true
     setDraft(null)
-    const center = pinchCenter(first, second)
+
+    const center = pinchCenter(first.point, second.point)
+    const distance = pinchDistance(first.point, second.point)
+    // どちらかの指がレイヤの上にあれば、そのレイヤを拡縮する。なければ画像ビュー。
+    const targetId = tracked.find((pointer) => pointer.layerId)?.layerId ?? null
+    const targetLayer = targetId
+      ? (layers.value.find((layer) => layer.id === targetId) ?? null)
+      : null
+
+    if (targetLayer) {
+      selectLayer(targetLayer.id)
+      pushHistory()
+      pinchRef.current = {
+        kind: 'layer',
+        layerId: targetLayer.id,
+        box: { ...targetLayer },
+        center,
+        distance,
+      }
+      return
+    }
     pinchRef.current = {
+      kind: 'view',
       view: activeView,
-      center: toAnchor(center.x, center.y),
-      distance: pinchDistance(first, second),
+      anchor: toAnchor(center.x, center.y),
+      distance,
     }
   }
 
   const trackPointerMove = (event: JSX.TargetedPointerEvent<HTMLDivElement>) => {
     const pointers = pointersRef.current
-    if (!pointers.has(event.pointerId)) return
-    pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
-    const anchor = pinchRef.current
-    if (!anchor || pointers.size < 2) return
+    const tracked = pointers.get(event.pointerId)
+    if (!tracked) return
+    tracked.point = { x: event.clientX, y: event.clientY }
+    const target = pinchRef.current
+    if (!target || pointers.size < 2) return
     const [first, second] = [...pointers.values()]
     if (!first || !second) return
-    const center = pinchCenter(first, second)
-    setView(
-      applyPinch(anchor, toAnchor(center.x, center.y), pinchDistance(first, second)),
-    )
+    const center = pinchCenter(first.point, second.point)
+    const distance = pinchDistance(first.point, second.point)
+
+    if (target.kind === 'view') {
+      setView(
+        applyPinch(
+          { view: target.view, center: target.anchor, distance: target.distance },
+          toAnchor(center.x, center.y),
+          distance,
+        ),
+      )
+      return
+    }
+    // レイヤは縦横比を保ったまま拡縮し、中点の移動ぶんだけ一緒に動かす
+    const ratio = distance / Math.max(target.distance, 1)
+    updateLayer(target.layerId, {
+      width: Math.max(MIN_LAYER_SIZE, target.box.width * ratio),
+      height: Math.max(MIN_LAYER_SIZE, target.box.height * ratio),
+      cx: target.box.cx + (center.x - target.center.x) / Math.max(scale, 0.0001),
+      cy: target.box.cy + (center.y - target.center.y) / Math.max(scale, 0.0001),
+    })
   }
 
   const trackPointerUp = (event: JSX.TargetedPointerEvent<HTMLDivElement>) => {
     pointersRef.current.delete(event.pointerId)
-    if (pointersRef.current.size < 2) pinchRef.current = null
+    if (pointersRef.current.size < 2) endPinch()
   }
 
   const startDraft = (event: JSX.TargetedPointerEvent<HTMLDivElement>) => {

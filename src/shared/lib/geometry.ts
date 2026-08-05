@@ -59,6 +59,40 @@ export function scaleBox(box: Box, scale: number): Box {
   }
 }
 
+export interface Rect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** 回転を含むボックスの外接矩形。指定範囲だけを処理したいときに使う。 */
+export function boxBounds(box: Box): Rect {
+  const corners = boxCorners(box)
+  const xs = corners.map((corner) => corner.x)
+  const ys = corners.map((corner) => corner.y)
+  const minX = Math.min(...xs)
+  const minY = Math.min(...ys)
+  return {
+    x: minX,
+    y: minY,
+    width: Math.max(...xs) - minX,
+    height: Math.max(...ys) - minY,
+  }
+}
+
+/** 矩形を (0,0)-(width,height) の内側に収める。はみ出しは切り落とす。 */
+export function clampRect(rect: Rect, width: number, height: number): Rect {
+  const x = clamp(rect.x, 0, width)
+  const y = clamp(rect.y, 0, height)
+  return {
+    x,
+    y,
+    width: clamp(rect.x + rect.width, 0, width) - x,
+    height: clamp(rect.y + rect.height, 0, height) - y,
+  }
+}
+
 /** 四辺を内側へ縮めたボックスを返す（境界をぼかす段階描画に使う）。 */
 export function insetBox(box: Box, inset: number): Box {
   return {

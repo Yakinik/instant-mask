@@ -28,20 +28,45 @@ export function createMaskLayer(
   return { ...box, id: createLayerId(), kind: 'mask', effect, shape, strength, softness }
 }
 
+/** 半径がこれを超えると領域内が平均色に飽和し、それ以上ぼかしても見た目が変わらない（実測値）。 */
+const BLUR_SATURATION = 0.3
+
 /**
- * ぼかし半径（画像ピクセル）。領域が小さいほど半径も小さくして、
- * 小さな領域でも強度スライダーの効きが変わらないようにする。
+ * ぼかし半径（画像ピクセル）。強さ 100 がちょうど飽和点になるようにし、
+ * 平方根カーブで中間の効きを確保する（線形だと中盤で頭打ちに感じる）。
  */
 export function blurRadiusFor(layer: MaskLayer): number {
   const base = Math.min(layer.width, layer.height)
-  // 既定の強さ 50 で短辺の 1/3。文字がはっきり読めなくなる程度を目安にしている。
-  return Math.max(2, (base * layer.strength) / 150)
+  const ratio = Math.sqrt(Math.max(0, layer.strength) / 100)
+  return Math.max(1, base * BLUR_SATURATION * ratio)
 }
 
-/** モザイクの 1 セルの大きさ（画像ピクセル）。 */
+/**
+ * ぼかしの下敷きに敷くモザイクのセル。
+ * 強さに連動させると、半径が少し変わるだけでセル数が整数で跳び、
+ * ぼかしの見え方が段階的に変化してしまうので、強さからは独立させる。
+ */
+export function backdropCellFor(layer: MaskLayer): number {
+  return Math.max(4, Math.min(layer.width, layer.height) / 12)
+}
+
+/** 強さの両端で領域に入るセル数。細かい側と粗い側を指数で結ぶ。 */
+const PIXEL_CELLS_MIN = 2
+const PIXEL_CELLS_MAX = 32
+
+/**
+ * モザイクの 1 セルの大きさ（画像ピクセル）。指数カーブで、細かい側でも粗い側でも
+ * 1 目盛りあたりの見た目の変化量が揃うようにする。
+ *
+ * セル数は整数に丸めない。丸めると粗い側（2〜4 セル）で刻みが足りず、
+ * 強さを変えても同じ見た目になる区間ができてしまう。実際の分割数は
+ * 画像全体に対して計算されるので、丸めなくても十分細かく変化する。
+ */
 export function pixelCellFor(layer: MaskLayer): number {
   const base = Math.min(layer.width, layer.height)
-  return Math.max(3, (base * layer.strength) / 200)
+  const ratio = Math.min(100, Math.max(0, layer.strength)) / 100
+  const cells = PIXEL_CELLS_MAX * (PIXEL_CELLS_MIN / PIXEL_CELLS_MAX) ** ratio
+  return base / cells
 }
 
 /** 境界をぼかす幅（画像ピクセル）。柔らかさ 100 で短辺の 1/4 まで。 */
