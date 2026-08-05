@@ -19,7 +19,16 @@ export const selectedLayerId = signal<string | null>(null)
 
 /** 読み込み失敗などの通知。表示したら null に戻す。 */
 export const errorMessage = signal<string | null>(null)
+
+/** 絵文字・文字ピッカーの用途。追加で開いたのか、選択中のものを編集しに来たのか。 */
+export type StampPickerMode = 'add' | 'edit'
 export const emojiPickerOpen = signal(false)
+export const emojiPickerMode = signal<StampPickerMode>('add')
+
+export function openStampPicker(mode: StampPickerMode): void {
+  emojiPickerMode.value = mode
+  emojiPickerOpen.value = true
+}
 /** 領域の枠とハンドルを表示するか。false の間は仕上がり確認用に操作も止める。 */
 export const showFrames = signal(true)
 /** ピンチ中は単指のドラッグを止め、拡縮の対象が 1 つだけになるようにする。 */

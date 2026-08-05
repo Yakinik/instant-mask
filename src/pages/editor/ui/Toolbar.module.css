@@ -1,62 +1,109 @@
+/*
+ * 役割ごとに 3 ゾーン。順序は常に固定で、状態が変わっても位置が動かないようにする。
+ *   [ 内容の設定（伸縮） ] [ 選択中への操作 ] [ 常時のアクション ]
+ */
 .bar {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   padding: 10px 14px;
   border-top: 1px solid var(--line);
   background: var(--panel);
 }
 
-/* 横スクロールさせず、入りきらない分は折り返して全部見せる */
-.settings {
+.settingsZone,
+.layerZone,
+.globalZone {
   display: flex;
+  align-items: center;
+}
+
+/* 設定だけが伸び縮みし、残りは右端に張り付く */
+.settingsZone {
   flex: 1 1 auto;
   flex-wrap: wrap;
-  align-items: center;
   gap: 8px 12px;
   min-width: 0;
 }
 
-.actions {
-  display: flex;
+.layerZone,
+.globalZone {
   flex: 0 0 auto;
-  align-items: center;
   gap: 4px;
 }
 
+/* ゾーンの切れ目を見せて、どこに何があるか分かるようにする */
+.layerZone {
+  /* 選択の有無で設定ゾーンの幅が変わらないよう、場所を先に確保しておく */
+  min-width: 250px;
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+
+/* 未選択のときは区切り線まで出すと意味のない仕切りに見えるので消す */
+.layerZone:empty {
+  border-left: 0;
+}
+
+.globalZone {
+  padding-left: 14px;
+  border-left: 1px solid var(--line);
+}
+
+/* 伸縮させると余白の差でスライダーの長さが状態ごとに変わるので、幅は固定する */
 .slider {
-  flex: 1 1 150px;
-  max-width: 240px;
+  flex: 0 0 190px;
 }
 
-.hint {
-  color: var(--muted);
-  font-size: 12px;
+.badge {
+  flex: 0 0 auto;
+  max-width: 6em;
+  font-size: 20px;
+  line-height: 1.2;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
 }
 
+/* 狭い画面ではゾーンごとに行を分ける。折り返し任せにすると行の構成が状態で変わる */
 @media (max-width: 640px) {
   .bar {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
-    padding: 8px 10px;
+    gap: 0;
+    padding: 0 10px 8px;
   }
 
-  .settings {
-    gap: 8px;
+  .settingsZone,
+  .layerZone,
+  .globalZone {
+    flex-wrap: wrap;
+    padding: 8px 0 0;
+    border-left: 0;
+  }
+
+  .layerZone,
+  .globalZone {
+    border-top: 1px solid var(--line);
+    margin-top: 8px;
+  }
+
+  /* 狭い画面では縦が貴重なので、空のゾーンは畳む */
+  .layerZone {
+    min-width: 0;
+  }
+
+  .layerZone:empty {
+    display: none;
+  }
+
+  .globalZone {
+    justify-content: space-between;
   }
 
   .slider {
     flex: 1 1 160px;
     max-width: none;
-  }
-
-  .actions {
-    justify-content: flex-end;
-  }
-
-  .hint {
-    display: none;
   }
 }

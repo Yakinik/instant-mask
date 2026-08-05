@@ -36,6 +36,9 @@ import { createMaskLayer } from '../model/mask'
 import { LayerFrame } from './LayerFrame'
 import styles from './Stage.module.css'
 
+/** 表示用キャンバスの総ピクセル数の上限。大きな写真を拡大したときの膨張を抑える。 */
+const MAX_CANVAS_PIXELS = 4_000_000
+
 interface DraftRegion {
   start: Point
   current: Point
@@ -117,16 +120,24 @@ export function Stage({ image }: { image: LoadedImage }) {
   useLayoutEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || scale <= 0) return
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    // 拡大しても元画像以上の情報はないので、原寸 × DPR を解像度の上限にする。
-    const renderScale = Math.min(scale * dpr, dpr)
-    const pixelWidth = Math.max(1, Math.round(image.width * renderScale))
-    const pixelHeight = Math.max(1, Math.round(image.height * renderScale))
-    if (canvas.width !== pixelWidth) canvas.width = pixelWidth
-    if (canvas.height !== pixelHeight) canvas.height = pixelHeight
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    renderScene(ctx, image.source, image, layerList, renderScale)
+    // ポインタ移動のたびに同期描画すると、間に合わないぶんが無駄になる。
+    // 1 フレームに 1 回へ間引く。
+    const frame = requestAnimationFrame(() => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2)
+      // 拡大しても元画像以上の情報はないので、原寸 × DPR を上限にする。
+      // さらに総ピクセル数でも頭打ちにする（大きな写真を拡大するとメモリと
+      // 描画時間が一気に膨らむため）。
+      const budget = Math.sqrt(MAX_CANVAS_PIXELS / (image.width * image.height))
+      const renderScale = Math.min(scale * dpr, dpr, budget)
+      const pixelWidth = Math.max(1, Math.round(image.width * renderScale))
+      const pixelHeight = Math.max(1, Math.round(image.height * renderScale))
+      if (canvas.width !== pixelWidth) canvas.width = pixelWidth
+      if (canvas.height !== pixelHeight) canvas.height = pixelHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+      renderScene(ctx, image.source, image, layerList, renderScale)
+    })
+    return () => cancelAnimationFrame(frame)
   }, [image, layerList, scale])
 
   const toImagePoint = (event: PointerEvent): Point => {
@@ -388,6 +399,10 @@ export function Stage({ image }: { image: LoadedImage }) {
           )}
         </div>
       </div>
+
+      {layerList.length === 0 && framesVisible && (
+        <p class={styles.hint}>ドラッグで隠したい範囲を指定</p>
+      )}
 
       {zoomed && (
         <button type="button" class={styles.zoomReset} onClick={() => setView(FIT_VIEW)}>

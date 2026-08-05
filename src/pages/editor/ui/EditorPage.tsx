@@ -3,7 +3,7 @@ import { useEffect, useState } from 'preact/hooks'
 import { APP_NAME, APP_TAGLINE } from '@/shared/config/app'
 import { Button, Icon } from '@/shared/ui'
 
-import { exportImage } from '../lib/export-image'
+import { exportImage, prefersShareSheet } from '../lib/export-image'
 import { acceptImageFromDialog, acceptPastedItems } from '../lib/image-input'
 import {
   emojiPickerOpen,
@@ -122,9 +122,14 @@ export function EditorPage() {
                 <Icon name="image" />
                 <span class={styles.actionLabel}>画像を変更</span>
               </Button>
+              {/* モバイルは共有シート経由で写真（カメラロール）へ、PC はそのままダウンロード */}
               <Button variant="primary" disabled={saving} onClick={() => void save()}>
                 <Icon name="download" />
-                {saving ? '書き出し中…' : '画像を保存'}
+                {saving
+                  ? '書き出し中…'
+                  : prefersShareSheet()
+                    ? '写真に保存'
+                    : '画像を保存'}
               </Button>
             </>
           )}

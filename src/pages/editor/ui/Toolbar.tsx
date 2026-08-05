@@ -1,88 +1,50 @@
-import { Button, Icon, SegmentedControl, Slider } from '@/shared/ui'
+import { Button, Icon } from '@/shared/ui'
 
-import {
-  EFFECT_OPTIONS,
-  SHAPE_OPTIONS,
-  SOFTNESS_MAX,
-  SOFTNESS_MIN,
-  STRENGTH_MAX,
-  STRENGTH_MIN,
-} from '../config/mask-options'
 import {
   canRedo,
   canUndo,
   clearLayers,
-  emojiPickerOpen,
   layers,
-  maskEffect,
-  maskShape,
-  maskSoftness,
-  maskStrength,
+  openStampPicker,
   redo,
   selectedLayer,
   showFrames,
   undo,
 } from '../model/editor'
-import { LayerInspector } from './LayerInspector'
+import { LayerActions } from './LayerActions'
+import { MaskSettings } from './MaskSettings'
+import { StampSettings } from './StampSettings'
 import styles from './Toolbar.module.css'
 
-function MaskDefaults() {
-  return (
-    <>
-      <SegmentedControl
-        label="効果"
-        options={EFFECT_OPTIONS}
-        value={maskEffect.value}
-        onChange={(effect) => {
-          maskEffect.value = effect
-        }}
-      />
-      <SegmentedControl
-        label="形"
-        options={SHAPE_OPTIONS}
-        value={maskShape.value}
-        onChange={(shape) => {
-          maskShape.value = shape
-        }}
-      />
-      <Slider
-        class={styles.slider}
-        label="強さ"
-        min={STRENGTH_MIN}
-        max={STRENGTH_MAX}
-        value={maskStrength.value}
-        valueText={`${maskStrength.value}`}
-        onInput={(strength) => {
-          maskStrength.value = strength
-        }}
-      />
-      <Slider
-        class={styles.slider}
-        label="柔らかさ"
-        min={SOFTNESS_MIN}
-        max={SOFTNESS_MAX}
-        value={maskSoftness.value}
-        valueText={`${maskSoftness.value}`}
-        onInput={(softness) => {
-          maskSoftness.value = softness
-        }}
-      />
-      <span class={styles.hint}>ドラッグで範囲指定・ホイールで拡縮</span>
-    </>
-  )
-}
-
+/**
+ * 下部の操作エリア。役割ごとに 3 つのゾーンへ固定し、状態が変わっても順序を変えない。
+ *
+ *   [ 内容の設定 ] [ 選択中への操作 ] [ 常時のアクション ]
+ *
+ * 内容の設定は、未選択なら「次に作るマスクの既定」、選択中ならそのレイヤを編集する。
+ * どちらも同じコンポーネントを通すので、選択を切り替えても項目の位置が動かない。
+ */
 export function Toolbar() {
   const selected = selectedLayer.value
 
   return (
     <div class={styles.bar}>
-      <div class={styles.settings}>
-        {selected ? <LayerInspector layer={selected} /> : <MaskDefaults />}
+      <div class={styles.settingsZone}>
+        {selected?.kind === 'emoji' ? (
+          <StampSettings layer={selected} />
+        ) : (
+          <MaskSettings layer={selected?.kind === 'mask' ? selected : null} />
+        )}
       </div>
-      <div class={styles.actions}>
-        {/* 領域を選択中でも追加できるよう、常に出しておく */}
-        <Button onClick={() => (emojiPickerOpen.value = true)}>
+
+      {/* 未選択でも枠だけ残す。畳むと設定ゾーンの幅が変わり、行数が増減して並びが動くため */}
+      <div class={styles.layerZone}>
+        {selected && <LayerActions layer={selected} />}
+      </div>
+
+      <div class={styles.globalZone}>
+        {/* 選択中でも「追加」として振る舞う（編集は選択中の設定側から行う） */}
+        <Button onClick={() => openStampPicker('add')}>
           <Icon name="plus" />
           絵文字・文字
         </Button>
