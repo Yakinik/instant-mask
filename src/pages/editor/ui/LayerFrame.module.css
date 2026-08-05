@@ -1,0 +1,65 @@
+.frame {
+  position: absolute;
+  border: 1px dashed rgb(255 255 255 / 0.5);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.25);
+  cursor: move;
+  touch-action: none;
+}
+
+.frame:hover {
+  border-color: rgb(255 255 255 / 0.85);
+}
+
+.selected {
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.6);
+}
+
+.handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border: 1.5px solid var(--accent);
+  border-radius: 3px;
+  background: #fff;
+  touch-action: none;
+}
+
+/* 指でも掴めるように当たり判定を広げる */
+.handle::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}
+
+.rotate {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  margin: -30px 0 0 -7px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background: #fff;
+  cursor: grab;
+  touch-action: none;
+}
+
+.rotate::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: 16px;
+  margin-left: -0.5px;
+  background: var(--accent);
+}
+
+.rotate::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+}

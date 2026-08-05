@@ -1,0 +1,22 @@
+{
+  "name": "instant-mask",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Blur, pixelate and cover parts of an image right in the browser.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.11.0",
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.0"
+  }
+}
