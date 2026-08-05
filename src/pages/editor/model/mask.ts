@@ -11,17 +11,21 @@ export interface MaskLayer extends LayerBase {
   shape: MaskShape
   /** 1〜100。領域の短辺に対する相対的な強さ。 */
   strength: number
+  /** 0〜100。境界をぼかして背景に馴染ませる量。0 でくっきり。 */
+  softness: number
 }
 
 export const DEFAULT_MASK_STRENGTH = 50
+export const DEFAULT_MASK_SOFTNESS = 0
 
 export function createMaskLayer(
   box: Box,
   effect: MaskEffect,
   shape: MaskShape,
   strength: number,
+  softness: number,
 ): MaskLayer {
-  return { ...box, id: createLayerId(), kind: 'mask', effect, shape, strength }
+  return { ...box, id: createLayerId(), kind: 'mask', effect, shape, strength, softness }
 }
 
 /**
@@ -38,4 +42,11 @@ export function blurRadiusFor(layer: MaskLayer): number {
 export function pixelCellFor(layer: MaskLayer): number {
   const base = Math.min(layer.width, layer.height)
   return Math.max(3, (base * layer.strength) / 200)
+}
+
+/** 境界をぼかす幅（画像ピクセル）。柔らかさ 100 で短辺の 1/4 まで。 */
+export function featherFor(layer: MaskLayer): number {
+  if (layer.softness <= 0) return 0
+  const base = Math.min(layer.width, layer.height)
+  return Math.max(1, (base * layer.softness) / 400)
 }

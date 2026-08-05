@@ -22,6 +22,7 @@ import {
   layers,
   maskEffect,
   maskShape,
+  maskSoftness,
   maskStrength,
   selectLayer,
   selectedLayerId,
@@ -42,6 +43,9 @@ export function Stage({ image }: { image: LoadedImage }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const pointersRef = useRef(new Map<number, Point>())
   const pinchRef = useRef<PinchAnchor | null>(null)
+  // 指を離す順序の都合で pinchRef は最後の 1 本が残った時点で消える。
+  // 「このタッチ列でピンチが起きたか」は別に覚えておき、全部離れるまで領域確定を抑える。
+  const pinchedRef = useRef(false)
 
   const [viewport, setViewport] = useState({ width: 0, height: 0 })
   const [view, setView] = useState<ViewState>(FIT_VIEW)
@@ -145,11 +149,14 @@ export function Stage({ image }: { image: LoadedImage }) {
   const trackPointerDown = (event: JSX.TargetedPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== 'touch') return
     const pointers = pointersRef.current
+    // 指が 1 本もない状態からの開始 = 新しいジェスチャ
+    if (pointers.size === 0) pinchedRef.current = false
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
     if (pointers.size !== 2) return
     const [first, second] = [...pointers.values()]
     if (!first || !second) return
     // 2 本目が触れた時点で範囲ドラッグは取り消し、ピンチに切り替える
+    pinchedRef.current = true
     setDraft(null)
     const center = pinchCenter(first, second)
     pinchRef.current = {
@@ -181,16 +188,23 @@ export function Stage({ image }: { image: LoadedImage }) {
   const startDraft = (event: JSX.TargetedPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return
     if (pointersRef.current.size >= 2) return
+    // 触れている指が無い = マウスなどの単独ジェスチャ。前のピンチの痕跡は消しておく
+    // （マウスの pointerdown はタッチ用の追跡を通らないため、ここで面倒を見る）
+    if (pointersRef.current.size === 0) pinchedRef.current = false
     event.preventDefault()
     selectLayer(null)
 
     const target = event.currentTarget
     const origin = toImagePoint(event)
     setDraft({ start: origin, current: origin })
-    target.setPointerCapture(event.pointerId)
+    try {
+      target.setPointerCapture(event.pointerId)
+    } catch {
+      // キャプチャできない環境でも、要素内のドラッグは追えるので続行する
+    }
 
     const move = (pointer: PointerEvent) => {
-      if (pinchRef.current) return
+      if (pinchedRef.current) return
       setDraft({ start: origin, current: toImagePoint(pointer) })
     }
     const finish = (pointer: PointerEvent) => {
@@ -198,11 +212,17 @@ export function Stage({ image }: { image: LoadedImage }) {
       target.removeEventListener('pointerup', finish)
       target.removeEventListener('pointercancel', finish)
       setDraft(null)
-      if (pinchRef.current) return
+      if (pinchedRef.current) return
       const box = boxFromPoints(origin, toImagePoint(pointer))
       if (box.width < MIN_LAYER_SIZE || box.height < MIN_LAYER_SIZE) return
       addLayer(
-        createMaskLayer(box, maskEffect.value, maskShape.value, maskStrength.value),
+        createMaskLayer(
+          box,
+          maskEffect.value,
+          maskShape.value,
+          maskStrength.value,
+          maskSoftness.value,
+        ),
       )
     }
     target.addEventListener('pointermove', move)

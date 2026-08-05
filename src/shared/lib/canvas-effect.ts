@@ -2,15 +2,33 @@ import { type Box, boxCorners } from './geometry'
 
 export type ClipShape = 'rect' | 'ellipse'
 
-let filterSupport: boolean | null = null
+let blurSupport: boolean | null = null
 
-/** Canvas 2D の filter が使えるか（未対応環境ではボカシをモザイクで代替する）。 */
-export function supportsCanvasFilter(): boolean {
-  if (filterSupport === null) {
-    const ctx = document.createElement('canvas').getContext('2d')
-    filterSupport = !!ctx && typeof ctx.filter === 'string'
+/**
+ * Canvas 2D のブラーが実際に効くかを実測する。
+ * `typeof ctx.filter === 'string'` は返すのにブラーが掛からない環境があるため、
+ * 小さな Canvas に実際に描いて滲みを確認する。
+ */
+export function supportsCanvasBlur(): boolean {
+  if (blurSupport !== null) return blurSupport
+  const canvas = document.createElement('canvas')
+  canvas.width = 16
+  canvas.height = 16
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx || typeof ctx.filter !== 'string') {
+    blurSupport = false
+    return blurSupport
   }
-  return filterSupport
+  ctx.fillStyle = '#000'
+  ctx.fillRect(0, 0, 16, 16)
+  ctx.filter = 'blur(3px)'
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, 8, 16)
+  ctx.filter = 'none'
+  // 境界のすぐ外側に白が滲んでいればブラーが効いている
+  const edge = ctx.getImageData(10, 8, 1, 1).data[0] ?? 0
+  blurSupport = edge > 8 && edge < 248
+  return blurSupport
 }
 
 /** 回転を含むボックス形状で以降の描画をクリップする。呼び出し側で save/restore すること。 */
@@ -41,7 +59,7 @@ export function clipToBox(
   ctx.clip()
 }
 
-// 縮小画像の一時置き場。モザイク描画のたびに canvas を作らないよう使い回す。
+// 縮小画像の一時置き場。描画のたびに canvas を作らないよう使い回す。
 let scratch: HTMLCanvasElement | null = null
 
 function getScratch(width: number, height: number): CanvasRenderingContext2D | null {
@@ -76,6 +94,35 @@ export function drawPixelated(
   ctx.imageSmoothingEnabled = smoothing
 }
 
+/**
+ * ctx.filter が使えない環境向けのブラー。縮小してから補間つきで引き伸ばす。
+ * モザイクと違ってブロック境界が出ないので、ぼかしとして通用する見た目になる。
+ */
+function drawDownsampledBlur(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  const factor = Math.max(2, Math.min(96, radius * 1.5))
+  const cols = Math.max(1, Math.round(width / factor))
+  const rows = Math.max(1, Math.round(height / factor))
+  const small = getScratch(cols, rows)
+  if (!small) return
+  small.imageSmoothingEnabled = true
+  small.imageSmoothingQuality = 'high'
+  small.drawImage(source, 0, 0, cols, rows)
+
+  const smoothing = ctx.imageSmoothingEnabled
+  const quality = ctx.imageSmoothingQuality
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = 'high'
+  ctx.drawImage(small.canvas, 0, 0, cols, rows, 0, 0, width, height)
+  ctx.imageSmoothingEnabled = smoothing
+  ctx.imageSmoothingQuality = quality
+}
+
 /** 画像全体をぼかして (0,0)-(width,height) に描く。 */
 export function drawBlurred(
   ctx: CanvasRenderingContext2D,
@@ -84,6 +131,10 @@ export function drawBlurred(
   height: number,
   radius: number,
 ): void {
+  if (!supportsCanvasBlur()) {
+    drawDownsampledBlur(ctx, source, width, height, radius)
+    return
+  }
   ctx.filter = `blur(${radius}px)`
   ctx.drawImage(source, 0, 0, width, height)
   ctx.filter = 'none'
