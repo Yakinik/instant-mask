@@ -67,7 +67,7 @@ function MaskDefaults() {
           maskSoftness.value = softness
         }}
       />
-      <span class={styles.hint}>ドラッグで範囲指定・ピンチで拡大</span>
+      <span class={styles.hint}>ドラッグで範囲指定・ホイールで拡縮</span>
     </>
   )
 }
