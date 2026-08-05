@@ -42,10 +42,7 @@ export async function exportImage(
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('画像を書き出せませんでした')
 
-  // 原寸なので変換は掛けない。座標はそのまま画像ピクセル。
-  ctx.setTransform(1, 0, 0, 1, 0, 0)
-  ctx.clearRect(0, 0, image.width, image.height)
-  renderScene(ctx, image.source, image, layers)
+  renderScene(ctx, image.source, image, layers, 1)
 
   const asJpeg = image.type === 'image/jpeg'
   const blob = asJpeg
