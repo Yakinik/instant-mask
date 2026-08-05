@@ -35,7 +35,8 @@ Feature-Sliced Design v2.1。`app` / `pages/editor` / `shared` の 3 レイヤ�
 
 ## 軽量方針
 
-公開バンドルは **gzip 20KB 以内**を上限とする（現在 19.0KB）。
+公開バンドルは **gzip 20KB 以内**を上限とする（現在 19.9KB。残り 0.1KB しかないので、
+次に機能を足すときは既存実装の見直しか、上限そのものの見直しが要る）。
 
 - 依存を増やさない。UI ライブラリ、アイコンライブラリ、画像処理ライブラリは使わない。
 - Web フォント・アイコンフォント・画像アセットを追加しない。アイコンはインライン SVG、
@@ -51,8 +52,16 @@ Feature-Sliced Design v2.1。`app` / `pages/editor` / `shared` の 3 レイヤ�
   敷き、その上にボカシを重ねること（`lib/scene.ts` の `drawMask`）。順序を崩すと
   マスクとして破綻する。
 - `ctx.filter` 非対応環境ではモザイクへ自動フォールバックする（`supportsCanvasFilter()`）。
+- 画像ビューの拡大（`lib/viewport-gesture.ts`）では、Canvas の解像度を **原寸 × DPR** で
+  頭打ちにする。倍率に比例させると大きな画像を拡大したときにメモリを食うだけで、
+  元画像以上の情報は得られない。
+- ズームのジェスチャは `.stage` の `touch-action: none` とポインタ 2 本の距離比・中点で
+  自前処理している。1 本目でマスクのドラッグが始まっていても、2 本目が触れたら
+  ドラフトを破棄してピンチへ切り替える。
 - Vite 8 は Oxc ベース。JSX 設定は `esbuild` ではなく `oxc` に書く。
 - TypeScript 7 では `baseUrl` が使えない。`paths` は `./src/*` のように相対で書く。
+- CSS Modules の `styles.foo` は `string | undefined` になる。`exactOptionalPropertyTypes`
+  が有効なので、UI kit の `class` prop は `string | undefined` と書く（`string` では渡せない）。
 
 ## 検証
 
