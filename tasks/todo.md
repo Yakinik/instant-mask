@@ -19,7 +19,7 @@
 - [x] `ui/EditorPage.tsx` — 起動時の復元
 - [x] `npm run build` とサイズ確認（23.63KB / 上限 25KB）
 - [x] playwright で検証
-- [ ] 公開
+- [x] 公開
 
 ## レビュー
 
