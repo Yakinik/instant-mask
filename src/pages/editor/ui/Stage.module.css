@@ -11,29 +11,21 @@
   touch-action: none;
 }
 
+/* 画像の輪郭を示すためだけの枠。中身はキャンバスが描く */
 .surface {
   position: relative;
   flex: 0 0 auto;
   border-radius: 4px;
   box-shadow: var(--shadow);
   will-change: transform;
-  /* 透過画像でも領域が分かるようにする市松模様 */
-  background-image:
-    linear-gradient(45deg, var(--panel-alt) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--panel-alt) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--panel-alt) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--panel-alt) 75%);
-  background-size: 16px 16px;
-  background-position:
-    0 0,
-    0 8px,
-    8px -8px,
-    -8px 0;
 }
 
+/* ステージの内側（padding のぶんを除いた領域）にぴったり重ねる */
 .canvas {
+  position: absolute;
+  inset: 16px;
   display: block;
-  border-radius: 4px;
+  pointer-events: none;
 }
 
 .overlay {

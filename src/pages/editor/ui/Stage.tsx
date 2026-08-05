@@ -36,9 +36,6 @@ import { createMaskLayer } from '../model/mask'
 import { LayerFrame } from './LayerFrame'
 import styles from './Stage.module.css'
 
-/** 表示用キャンバスの総ピクセル数の上限。大きな写真を拡大したときの膨張を抑える。 */
-const MAX_CANVAS_PIXELS = 4_000_000
-
 interface DraftRegion {
   start: Point
   current: Point
@@ -119,26 +116,41 @@ export function Stage({ image }: { image: LoadedImage }) {
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || scale <= 0) return
+    if (!canvas || scale <= 0 || viewport.width <= 0) return
     // ポインタ移動のたびに同期描画すると、間に合わないぶんが無駄になる。
     // 1 フレームに 1 回へ間引く。
     const frame = requestAnimationFrame(() => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
-      // 拡大しても元画像以上の情報はないので、原寸 × DPR を上限にする。
-      // さらに総ピクセル数でも頭打ちにする（大きな写真を拡大するとメモリと
-      // 描画時間が一気に膨らむため）。
-      const budget = Math.sqrt(MAX_CANVAS_PIXELS / (image.width * image.height))
-      const renderScale = Math.min(scale * dpr, dpr, budget)
-      const pixelWidth = Math.max(1, Math.round(image.width * renderScale))
-      const pixelHeight = Math.max(1, Math.round(image.height * renderScale))
+      // キャンバスは画面ぶんだけ。拡大しても画素数が増えないので、
+      // メモリと描画量が倍率に依存せず、しかも常に等倍の解像度で描ける。
+      const pixelWidth = Math.max(1, Math.round(viewport.width * dpr))
+      const pixelHeight = Math.max(1, Math.round(viewport.height * dpr))
       if (canvas.width !== pixelWidth) canvas.width = pixelWidth
       if (canvas.height !== pixelHeight) canvas.height = pixelHeight
       const ctx = canvas.getContext('2d')
       if (!ctx) return
-      renderScene(ctx, image.source, image, layerList, renderScale)
+      ctx.setTransform(1, 0, 0, 1, 0, 0)
+      ctx.clearRect(0, 0, pixelWidth, pixelHeight)
+      // 画面中央を基準に、パンと拡大を与えてから画像座標で描く
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.translate(
+        viewport.width / 2 + activeView.x,
+        viewport.height / 2 + activeView.y,
+      )
+      ctx.scale(scale, scale)
+      ctx.translate(-image.width / 2, -image.height / 2)
+      renderScene(ctx, image.source, image, layerList)
     })
     return () => cancelAnimationFrame(frame)
-  }, [image, layerList, scale])
+  }, [
+    image,
+    layerList,
+    scale,
+    activeView.x,
+    activeView.y,
+    viewport.width,
+    viewport.height,
+  ])
 
   const toImagePoint = (event: PointerEvent): Point => {
     const rect = surfaceRef.current?.getBoundingClientRect()
@@ -357,6 +369,10 @@ export function Stage({ image }: { image: LoadedImage }) {
       onPointerCancelCapture={trackPointerUp}
       onDblClick={() => setView(FIT_VIEW)}
     >
+      {/* 描画は画面サイズ固定のキャンバスへ。拡大しても画素数が増えない */}
+      <canvas ref={canvasRef} class={styles.canvas} />
+
+      {/* 操作用の当たり判定だけを画像サイズで重ねる */}
       <div
         class={styles.surface}
         ref={surfaceRef}
@@ -367,11 +383,6 @@ export function Stage({ image }: { image: LoadedImage }) {
         }}
         hidden={scale <= 0}
       >
-        <canvas
-          ref={canvasRef}
-          class={styles.canvas}
-          style={{ width: `${resolved.width}px`, height: `${resolved.height}px` }}
-        />
         <div
           class={cx(styles.overlay, !framesVisible && styles.preview)}
           onPointerDown={startDraft}
