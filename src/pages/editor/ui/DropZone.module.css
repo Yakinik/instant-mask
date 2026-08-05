@@ -1,0 +1,54 @@
+.wrap {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: min(520px, 100%);
+  min-height: min(260px, 40vh);
+  padding: 32px 24px;
+  border: 2px dashed var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.zone:hover,
+.dragging {
+  border-color: var(--accent);
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+}
+
+.title {
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hint {
+  font-size: 13px;
+}
+
+.note {
+  margin: 0;
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
