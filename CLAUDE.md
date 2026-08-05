@@ -35,7 +35,7 @@ Feature-Sliced Design v2.1。`app` / `pages/editor` / `shared` の 3 レイヤ�
 
 ## 軽量方針
 
-公開バンドルは **gzip 25KB 以内**を上限とする（現在 21.4KB）。
+公開バンドルは **gzip 25KB 以内**を上限とする（現在 23.6KB）。
 上限に達したら、まず実装を見直す。それでも収まらないときはユーザーに相談すること
 （勝手に上限を引き上げない）。
 
@@ -63,6 +63,12 @@ Feature-Sliced Design v2.1。`app` / `pages/editor` / `shared` の 3 レイヤ�
 - TypeScript 7 では `baseUrl` が使えない。`paths` は `./src/*` のように相対で書く。
 - CSS Modules の `styles.foo` は `string | undefined` になる。`exactOptionalPropertyTypes`
   が有効なので、UI kit の `class` prop は `string | undefined` と書く（`string` では渡せない）。
+- 編集状態の保存には **IndexedDB** を使う（`shared/lib/idb-store.ts`）。localStorage は 5MB 制限で
+  画像を入れられない。スタンプ履歴のように小さいものだけ localStorage を使う。
+- モザイクは領域の外接矩形を基準にセルを切る（`drawPixelatedRegion`）。画像全体を分割してから
+  切り抜くと、粗さを変えるたびにセル境界の位相がずれて見た目が行き来する。
+- ぼかしの下敷きモザイクは強さから独立させる。連動させるとセル数が整数で跳ね、
+  ぼかしの変化が段階的に見える。
 
 ## プロセスの停止
 

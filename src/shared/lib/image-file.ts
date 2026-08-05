@@ -2,6 +2,8 @@ export type ImageSource = ImageBitmap | HTMLImageElement
 
 export interface LoadedImage {
   source: ImageSource
+  /** 元データ。編集状態の保存・復元に使う。 */
+  blob: Blob
   width: number
   height: number
   /** 元ファイル名（クリップボード経由など不明な場合は空文字）。 */
@@ -37,7 +39,7 @@ export async function decodeImageFile(file: File): Promise<LoadedImage> {
   const width = source instanceof HTMLImageElement ? source.naturalWidth : source.width
   const height = source instanceof HTMLImageElement ? source.naturalHeight : source.height
   if (!width || !height) throw new Error('画像を読み込めませんでした')
-  return { source, width, height, name: file.name, type: file.type }
+  return { source, blob: file, width, height, name: file.name, type: file.type }
 }
 
 export function isImageFile(file: File): boolean {

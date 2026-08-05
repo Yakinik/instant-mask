@@ -9,18 +9,24 @@ import {
   image,
   pushHistory,
   selectedLayer,
+  stampStyle,
+  stampStyleOpen,
   updateLayer,
 } from '../model/editor'
 import { createEmojiLayer, measureStampWidth } from '../model/emoji'
 import { MIN_LAYER_SIZE } from '../model/layer'
+import { rememberStamp, stampHistory } from '../model/stamp-history'
 import styles from './EmojiPicker.module.css'
 
 function close(): void {
   emojiPickerOpen.value = false
 }
 
-/** 絵文字レイヤを選択中なら差し替え、そうでなければ画像の中央に追加する。 */
-function place(text: string): void {
+/**
+ * 絵文字・文字レイヤを選択中なら差し替え、そうでなければ画像の中央に追加する。
+ * 入力欄から来たものは履歴に残す（一覧に並んでいるプリセットは残さない）。
+ */
+function place(text: string, remember: boolean): void {
   const value = text.trim()
   if (!value) return
   const current = image.value
@@ -34,8 +40,17 @@ function place(text: string): void {
     })
   } else {
     const size = Math.max(MIN_LAYER_SIZE, Math.min(current.width, current.height) / 4)
-    addLayer(createEmojiLayer(value, current.width / 2, current.height / 2, size))
+    addLayer(
+      createEmojiLayer(
+        value,
+        current.width / 2,
+        current.height / 2,
+        size,
+        stampStyle.value,
+      ),
+    )
   }
+  if (remember) rememberStamp(value)
   close()
 }
 
@@ -45,9 +60,10 @@ export function EmojiPicker() {
   if (!emojiPickerOpen.value) return null
 
   const submit = () => {
-    place(text)
+    place(text, true)
     setText('')
   }
+  const recent = stampHistory.value
 
   return (
     <div class={styles.backdrop} onClick={close}>
@@ -88,6 +104,25 @@ export function EmojiPicker() {
         </form>
 
         <div class={styles.body}>
+          {recent.length > 0 && (
+            <section>
+              <h2 class={styles.category}>最近使ったもの</h2>
+              <div class={styles.recentList}>
+                {recent.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    class={styles.recentItem}
+                    title={item}
+                    onClick={() => place(item, false)}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+
           {EMOJI_CATEGORIES.map((category) => (
             <section key={category.name}>
               <h2 class={styles.category}>{category.name}</h2>
@@ -98,7 +133,7 @@ export function EmojiPicker() {
                     type="button"
                     class={styles.emoji}
                     title={char}
-                    onClick={() => place(char)}
+                    onClick={() => place(char, false)}
                   >
                     {char}
                   </button>
@@ -106,6 +141,18 @@ export function EmojiPicker() {
               </div>
             </section>
           ))}
+        </div>
+
+        <div class={styles.foot}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              emojiPickerOpen.value = false
+              stampStyleOpen.value = true
+            }}
+          >
+            文字のスタイル…
+          </Button>
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ import {
   pushHistory,
   removeLayer,
   selectedLayerIndex,
+  stampStyleOpen,
   updateLayer,
 } from '../model/editor'
 import { measureStampWidth } from '../model/emoji'
@@ -78,6 +79,7 @@ export function LayerInspector({ layer }: { layer: Layer }) {
             {layer.char}
           </span>
           <Button onClick={() => (emojiPickerOpen.value = true)}>内容を変更</Button>
+          <Button onClick={() => (stampStyleOpen.value = true)}>スタイル</Button>
           <Slider
             class={styles.slider}
             label="大きさ"
