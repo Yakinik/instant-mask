@@ -42,6 +42,7 @@ function MaskDefaults() {
         }}
       />
       <Slider
+        class={styles.slider}
         label="強さ"
         min={STRENGTH_MIN}
         max={STRENGTH_MAX}
@@ -55,7 +56,7 @@ function MaskDefaults() {
         <Icon name="plus" />
         絵文字
       </Button>
-      <span class={styles.hint}>画像上をドラッグして範囲を指定</span>
+      <span class={styles.hint}>ドラッグで範囲指定・ピンチで拡大</span>
     </>
   )
 }

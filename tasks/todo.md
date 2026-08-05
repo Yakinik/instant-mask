@@ -1,56 +1,72 @@
-# コミット identity の修正とエージェント設定の整備
+# ズーム対応と狭幅レイアウトの改善
 
-## 背景
+## 要求
 
-初回公開時のコミットが、利用していないアカウントのメールアドレス
-（`hajime.nagahata@gmail.com`）で記録されていた。identity を GitHub の noreply
-アドレスに変更し、履歴を作り直したうえでリポジトリを再生成する。
+1. GitHub リンクを外す
+2. 画像表示部分をピンチで拡大縮小できるようにする
+3. 横が狭い UI（スマホ等）で、下部インターフェースを横スワイプせずに全て表示する
 
-あわせて、今回の作業で判明した規約・手順を `develop` に残す。
+## 方針
 
-## 決定事項
-
-- コミット identity: `Yakinik <1999233+Yakinik@users.noreply.github.com>`
-- 履歴は単一の初期コミットに作り直す（リポジトリごと作り直すため粒度を保つ意味がない）
-- `.claude/settings.json` は作らない。公開系コマンドは確認プロンプトを残したいため
+- ズームは**画像ビューだけ**を拡大する（ページ全体のブラウザズームではない）。UI は固定のまま
+  画像を拡大でき、細かい箇所にマスクを置ける。
+- 操作: 2 本指ピンチ（ズーム＋パン同時）、⌘/Ctrl+ホイールとトラックパッドのピンチ、
+  ホイール／2 本指スクロールでパン、ダブルクリックで全体表示に戻す。
+- 倍率は「全体表示」を 1 とし、1〜8 倍。1 より縮小はしない（余白が増えるだけで意味がない）。
+- Canvas の解像度は「画像の原寸 × DPR」を上限にする。ズームしても元画像以上の情報はないので、
+  大きな画像で拡大したときに Canvas が肥大化するのを防ぐ。
+- 下部ツールバーは横スクロールをやめて折り返し（flex-wrap）にする。
 
 ## タスク
 
-- [x] リポジトリローカルの `user.email` / `user.name` を更新
-- [x] `CLAUDE.md` — プロジェクト規約（コミット identity / ブランチ運用 / FSD / 軽量方針 /
-      実装上の落とし穴 / 検証手順）
-- [x] `AGENTS.md` — Codex 等から CLAUDE.md を参照させるポインタ
-- [x] `.claude/skills/publish-site/SKILL.md` — 公開の定型手順と初期セットアップ
-- [x] 前回の計画を `tasks/done/` へアーカイブ
-- [x] 履歴を新 identity で作り直す（`git checkout --orphan` → 単一コミット）
-- [x] GitHub リポジトリの削除（ユーザーが Web UI で実施）と再作成
-- [x] `develop` / `master` / `pages` を push し、デフォルトブランチと Pages を再設定
-- [x] 公開 URL の疎通確認と、全コミットの author/committer 確認
+- [x] `shared/config/app.ts` から `REPO_URL` を削除
+- [x] `ui/EditorPage.tsx` / `.module.css` から GitHub リンクを削除
+- [x] `lib/viewport-gesture.ts` — ビュー状態（倍率・パン）の解決、ピンチ、ホイールズームの純関数
+- [x] `ui/Stage.tsx` — ビュー状態、ポインタ管理（ピンチ）、ホイール、倍率バッジ、Canvas 解像度上限
+- [x] `ui/Stage.module.css` — `touch-action` とバッジ
+- [x] `ui/Toolbar.module.css` — 折り返しレイアウト、狭幅時の調整
+- [x] `ui/Toolbar.tsx` / `ui/LayerInspector.tsx` — スライダーの伸縮指定、ヒント文言
+- [x] 狭幅でヘッダーのタイトルが折り返す／切れる問題の修正（ボタンラベルを畳む）
+- [x] `npm run build` とバンドルサイズ確認
+- [x] 実機確認: デスクトップ幅でのズーム／パン、375px でのツールバー全表示とピンチ
+- [ ] 公開
 
 ## レビュー
 
 ### 結果
 
-- リポジトリ: `Yakinik/instant-mask`（public、デフォルト `master`）
-- 公開 URL: `https://yakinik.github.io/instant-mask/`（配信元 `pages` / `/`）
-- 全コミットの author / committer が
-  `Yakinik <1999233+Yakinik@users.noreply.github.com>` であることを確認
-- バンドルサイズは変わらず gzip 19.02KB
+- GitHub リンクを削除（`REPO_URL` 定数ごと撤去）
+- ピンチズームを実装。375px 幅で 2 本指を 100px→250px に広げて **ちょうど 250%**、
+  表示幅 343px→858px を確認。⌘/Ctrl+ホイール、ホイールパン、倍率バッジからの全体表示復帰、
+  ダブルクリックでの復帰も動作確認済み
+- ツールバーは 375px / 500px のどちらでも `scrollWidth === clientWidth`（横スクロールなし）。
+  マスク選択時（効果・形・強さ・回転を戻す・削除）でも折り返しで全要素が見える
+
+### バンドルサイズ（gzip）
+
+| | 変更前 | 変更後 |
+| --- | ---: | ---: |
+| HTML | 0.62 KB | 0.62 KB |
+| CSS | 2.38 KB | 2.47 KB |
+| JS | 16.02 KB | 16.83 KB |
+| **合計** | **19.02 KB** | **19.92 KB** |
+
+CLAUDE.md の上限 20KB に対して残り 0.08KB。次に機能を足すときは実装を見直すか上限の
+見直しが要る。
 
 ### 判断が必要だった点
 
-1. **履歴の作り直し方**: `git rebase` / `git reset` / `rm -rf` はユーザー設定の deny list に
-   あるため使えない。`git checkout --orphan`（作業ツリーとインデックスを保持したまま
-   孤児ブランチを作る）で新履歴を作り、旧ブランチを `git branch -D` した。
-   `git switch --orphan` は追跡ファイルを消すので使わないこと。
-2. **リポジトリ削除**: `gh` のトークンに `delete_repo` スコープが無く API から削除できないため、
-   ユーザーに Web UI で削除してもらった。次回同じ状況になったら
-   `gh auth refresh -h github.com -s delete_repo` を依頼する（`publish-site` skill に記載済み）。
-3. **`.claude/settings.json` を作らない判断**: 効率化で allow list に入れる候補は
-   `scripts/tbp.sh` の実行だが、これは push を伴う外部公開行為なので確認を残すほうが安全。
-   読み取り系だけ許可しても削減できる手数がほぼ無い。
-
-### 再発防止
-
-`CLAUDE.md` の冒頭に identity を明記し、clone し直したときの設定手順も書いた。
-`.claude/skills/publish-site/SKILL.md` の初期セットアップ節にも `git config` を含めてある。
+1. **ズームの方式**: ブラウザのページズームに任せる案もあったが、UI ごと拡大されてしまい
+   「画像の細部にマスクを置く」用途に合わない。画像ビューだけを拡大する自前実装にした。
+   `touch-action: none` でブラウザ既定のピンチを止め、ポインタ 2 本の距離比と中点で
+   拡縮とパンを同時に処理している。
+2. **Canvas 解像度の上限**: 拡大に比例して Canvas を大きくすると、4000px 級の画像を 8 倍に
+   したときにメモリを圧迫する。元画像以上の情報は無いので `原寸 × DPR` を上限にした。
+   375px 幅での 250% ズーム時に Canvas が 858x572（原寸 900x600 未満）で頭打ちになることを確認。
+3. **2 本指とマスク作成の競合**: 1 本目でマスクのドラッグが始まっているところに 2 本目が
+   触れたら、ドラフトを破棄してピンチへ切り替える。確定処理もピンチ中は行わない。
+4. **`exactOptionalPropertyTypes` と CSS Modules**: `styles.foo` は `string | undefined` なので、
+   UI kit の `class?: string` には渡せない。`class?: string | undefined` に緩めた
+   （Button / Slider / SegmentedControl）。
+5. **狭幅ヘッダー**: タイトルを `nowrap` にしただけでは切れるため、640px 以下では
+   「画像を変更」ボタンをアイコンのみにしてタイトルの幅を確保した。

@@ -7,14 +7,14 @@
   background: var(--panel);
 }
 
+/* 横スクロールさせず、入りきらない分は折り返して全部見せる */
 .settings {
   display: flex;
   flex: 1 1 auto;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: thin;
 }
 
 .actions {
@@ -22,6 +22,11 @@
   flex: 0 0 auto;
   align-items: center;
   gap: 4px;
+}
+
+.slider {
+  flex: 1 1 150px;
+  max-width: 240px;
 }
 
 .hint {
@@ -35,6 +40,16 @@
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .settings {
+    gap: 8px;
+  }
+
+  .slider {
+    flex: 1 1 160px;
+    max-width: none;
   }
 
   .actions {

@@ -12,7 +12,8 @@ export interface SegmentedControlProps<T extends string> {
   value: T
   onChange: (value: T) => void
   label: string
-  class?: string
+  // CSS Modules のクラス名は string | undefined になるため undefined を明示的に許す
+  class?: string | undefined
 }
 
 export function SegmentedControl<T extends string>({

@@ -46,6 +46,7 @@ export function LayerInspector({ layer }: { layer: Layer }) {
           />
           {/* 連続的に変わる値なので履歴には積まない */}
           <Slider
+            class={styles.slider}
             label="強さ"
             min={STRENGTH_MIN}
             max={STRENGTH_MAX}
@@ -61,6 +62,7 @@ export function LayerInspector({ layer }: { layer: Layer }) {
           </span>
           <Button onClick={() => (emojiPickerOpen.value = true)}>絵文字を変更</Button>
           <Slider
+            class={styles.slider}
             label="大きさ"
             min={MIN_LAYER_SIZE}
             max={maxEmojiSize}

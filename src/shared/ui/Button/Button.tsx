@@ -12,7 +12,8 @@ export interface ButtonProps extends ButtonAttributes {
   variant?: 'primary' | 'default' | 'ghost' | 'danger'
   /** アイコンのみのボタン。正方形にして余白を詰める。 */
   square?: boolean
-  class?: string
+  // CSS Modules のクラス名は string | undefined になるため undefined を明示的に許す
+  class?: string | undefined
   children?: ComponentChildren
 }
 
