@@ -13,7 +13,7 @@ import {
   stampStyle,
 } from './editor'
 import { DEFAULT_STAMP_STYLE, type StampStyle } from './emoji'
-import type { Layer } from './layer'
+import { type Layer, reserveLayerIds } from './layer'
 import type { MaskEffect, MaskShape } from './mask'
 
 const SESSION_KEY = 'session'
@@ -56,6 +56,8 @@ export async function restoreSession(): Promise<boolean> {
       type: stored.image.type || stored.image.blob.type,
     })
     const loaded = await decodeImageFile(file)
+    // 復元したレイヤと ID が衝突しないよう、採番を進めてから反映する
+    reserveLayerIds(stored.layers)
     restoreState(loaded, stored.layers)
     if (stored.defaults) {
       maskEffect.value = stored.defaults.effect

@@ -1,10 +1,11 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 
 import { Button, Icon } from '@/shared/ui'
 
 import { EMOJI_CATEGORIES } from '../config/emoji-presets'
 import {
   addLayer,
+  emojiPickerMode,
   emojiPickerOpen,
   image,
   pushHistory,
@@ -13,7 +14,7 @@ import {
   stampStyleOpen,
   updateLayer,
 } from '../model/editor'
-import { createEmojiLayer, measureStampWidth } from '../model/emoji'
+import { type EmojiLayer, createEmojiLayer, measureStampWidth } from '../model/emoji'
 import { MIN_LAYER_SIZE } from '../model/layer'
 import { rememberStamp, stampHistory } from '../model/stamp-history'
 import styles from './EmojiPicker.module.css'
@@ -23,20 +24,20 @@ function close(): void {
 }
 
 /**
- * 絵文字・文字レイヤを選択中なら差し替え、そうでなければ画像の中央に追加する。
+ * editing が渡されたときだけ差し替える。追加で開いたときは、絵文字を選択中でも
+ * 新しいレイヤとして足す。
  * 入力欄から来たものは履歴に残す（一覧に並んでいるプリセットは残さない）。
  */
-function place(text: string, remember: boolean): void {
+function place(text: string, remember: boolean, editing: EmojiLayer | null): void {
   const value = text.trim()
   if (!value) return
   const current = image.value
   if (!current) return
-  const selected = selectedLayer.value
-  if (selected?.kind === 'emoji') {
+  if (editing) {
     pushHistory()
-    updateLayer(selected.id, {
+    updateLayer(editing.id, {
       char: value,
-      width: measureStampWidth(value, selected.height),
+      width: measureStampWidth(value, editing.height),
     })
   } else {
     const size = Math.max(MIN_LAYER_SIZE, Math.min(current.width, current.height) / 4)
@@ -55,12 +56,21 @@ function place(text: string, remember: boolean): void {
 }
 
 export function EmojiPicker() {
+  const open = emojiPickerOpen.value
+  const selected = selectedLayer.value
+  const editing =
+    emojiPickerMode.value === 'edit' && selected?.kind === 'emoji' ? selected : null
   const [text, setText] = useState('')
 
-  if (!emojiPickerOpen.value) return null
+  // 編集で開いたときは今の文字を入れておく。追加で開いたときは空から始める。
+  useEffect(() => {
+    if (open) setText(editing?.char ?? '')
+  }, [open, editing?.id])
+
+  if (!open) return null
 
   const submit = () => {
-    place(text, true)
+    place(text, true, editing)
     setText('')
   }
   const recent = stampHistory.value
@@ -71,11 +81,11 @@ export function EmojiPicker() {
         class={styles.panel}
         role="dialog"
         aria-modal="true"
-        aria-label="絵文字や文字を追加"
+        aria-label={editing ? '内容を変更' : '絵文字・文字を追加'}
         onClick={(event) => event.stopPropagation()}
       >
         <div class={styles.head}>
-          <strong>絵文字・文字を追加</strong>
+          <strong>{editing ? '内容を変更' : '絵文字・文字を追加'}</strong>
           <Button square variant="ghost" aria-label="閉じる" onClick={close}>
             <Icon name="close" />
           </Button>
@@ -95,11 +105,11 @@ export function EmojiPicker() {
             enterkeyhint="done"
             autocomplete="off"
             placeholder="絵文字や文字を入力"
-            aria-label="入力した文字を追加"
+            aria-label={editing ? '文字を変更' : '入力した文字を追加'}
             onInput={(event) => setText(event.currentTarget.value)}
           />
           <Button variant="primary" type="submit" disabled={text.trim().length === 0}>
-            追加
+            {editing ? '変更' : '追加'}
           </Button>
         </form>
 
@@ -114,7 +124,7 @@ export function EmojiPicker() {
                     type="button"
                     class={styles.recentItem}
                     title={item}
-                    onClick={() => place(item, false)}
+                    onClick={() => place(item, false, editing)}
                   >
                     {item}
                   </button>
@@ -133,7 +143,7 @@ export function EmojiPicker() {
                     type="button"
                     class={styles.emoji}
                     title={char}
-                    onClick={() => place(char, false)}
+                    onClick={() => place(char, false, editing)}
                   >
                     {char}
                   </button>

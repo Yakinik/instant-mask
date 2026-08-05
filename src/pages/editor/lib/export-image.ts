@@ -17,7 +17,7 @@ function buildFilename(original: string, extension: string): string {
  * モバイルでは共有シートから写真（カメラロール）に保存できるので使う。
  * デスクトップは Web Share が使える環境でも、そのままダウンロードした方が早い。
  */
-function prefersShareSheet(): boolean {
+export function prefersShareSheet(): boolean {
   const uaData = (navigator as Navigator & { userAgentData?: { mobile?: boolean } })
     .userAgentData
   if (uaData?.mobile) return true
