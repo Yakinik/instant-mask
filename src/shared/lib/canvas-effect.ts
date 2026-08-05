@@ -232,11 +232,8 @@ function drawDownsampledBlur(
   height: number,
   radius: number,
 ): void {
-  // 座標系が拡大されているぶんも解像度に反映する。画像座標だけで決めると、
-  // 拡大表示したときにぼかしだけ粗くなる。
-  const deviceScale = Math.max(0.01, ctx.getTransform().a)
-  const bufferWidth = Math.max(1, Math.round(width * deviceScale * BLUR_DOWNSCALE))
-  const bufferHeight = Math.max(1, Math.round(height * deviceScale * BLUR_DOWNSCALE))
+  const bufferWidth = Math.max(1, Math.round(width * BLUR_DOWNSCALE))
+  const bufferHeight = Math.max(1, Math.round(height * BLUR_DOWNSCALE))
   const small = getBlurScratch(bufferWidth, bufferHeight)
   if (!small) return
   small.imageSmoothingEnabled = true
@@ -245,7 +242,7 @@ function drawDownsampledBlur(
   small.drawImage(source, 0, 0, bufferWidth, bufferHeight)
 
   const buffer = small.getImageData(0, 0, bufferWidth, bufferHeight)
-  boxBlur(buffer, radius * deviceScale * BLUR_DOWNSCALE)
+  boxBlur(buffer, radius * BLUR_DOWNSCALE)
   small.putImageData(buffer, 0, 0)
 
   const smoothing = ctx.imageSmoothingEnabled
