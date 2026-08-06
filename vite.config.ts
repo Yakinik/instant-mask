@@ -26,7 +26,7 @@ export default defineConfig(({ command }): UserConfig => ({
   },
   build: {
     target: 'es2022',
-    cssTarget: 'chrome111',
+    cssTarget: ['chrome111', 'safari16.4'],
     assetsInlineLimit: 4096,
     reportCompressedSize: true,
   },

@@ -60,6 +60,13 @@
   display: flex;
   flex: 1 1 auto;
   min-height: 0;
+  /*
+   * ロングタップ・ドラッグでブラウザ標準の選択やコールアウトが出るのを抑える。
+   * マスク領域や絵文字の選択（アプリ内の状態）とは別の話。
+   */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .error {
