@@ -2,6 +2,7 @@
   "name": "instant-mask",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Blur, pixelate and cover parts of an image right in the browser.",
   "scripts": {

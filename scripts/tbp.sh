@@ -15,7 +15,7 @@ DEV="${IM_DEV_BRANCH:-develop}"
 MAIN="${IM_MAIN_BRANCH:-master}"
 PAGES="${IM_PAGES_BRANCH:-pages}"
 BUILD_DIR="${IM_BUILD_DIR:-dist}"
-MAIN_PATHS="${IM_MAIN_PATHS:-README.md}"
+MAIN_PATHS="${IM_MAIN_PATHS:-README.md LICENSE}"
 
 die() {
   echo "tbp: error: $*" >&2
@@ -101,7 +101,7 @@ sync-master) cmd_sync_main ;;
 usage: scripts/tbp.sh <subcommand>
 
   publish      develop をビルドし、dist の中身だけを pages ブランチへ公開する
-  sync-master  develop の README.md を master ブランチへ同期する
+  sync-master  develop の README.md と LICENSE を master ブランチへ同期する
 
 ブランチ名などは IM_DEV_BRANCH / IM_MAIN_BRANCH / IM_PAGES_BRANCH /
 IM_BUILD_DIR / IM_MAIN_PATHS で上書きできる。

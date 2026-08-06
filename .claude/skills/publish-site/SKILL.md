@@ -19,13 +19,13 @@ npm run build                      # 型チェック込み
 
 - `develop` 以外にいる場合は公開しない。`scripts/tbp.sh` が拒否する。
 - 未コミットの変更があるとビルド結果には入るが履歴に残らない。先にコミットするか確認する。
-- ビルド出力の **gzip 合計が 25KB を超えたら公開せずに報告する**（CLAUDE.md の軽量方針）。
+- ビルド出力の **gzip 合計が 30KB を超えたら公開せずに報告する**（CLAUDE.md の軽量方針）。
 
 ## 2. 公開
 
 ```bash
 bash scripts/tbp.sh publish        # dist の中身を pages ブランチへ
-bash scripts/tbp.sh sync-master    # README.md を変更したときだけ
+bash scripts/tbp.sh sync-master    # README.md / LICENSE を変更したときだけ
 ```
 
 どちらも一時 worktree 経由なので、主作業ツリーは `develop` のまま変わらない。
