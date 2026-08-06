@@ -12,7 +12,7 @@ npm run build   # 型チェック + 本番ビルド（dist/）
 
 | ブランチ | 役割 |
 | --- | --- |
-| `master` | README.md だけの情報掲示ブランチ（デフォルト） |
+| `master` | README.md と LICENSE だけの情報掲示ブランチ（デフォルト） |
 | `develop` | ソース一式。編集はここだけで行う |
 | `pages` | ビルド成果物だけの公開ブランチ（GitHub Pages の配信元） |
 
@@ -21,7 +21,7 @@ npm run build   # 型チェック + 本番ビルド（dist/）
 
 ```bash
 bash scripts/tbp.sh publish       # ビルドして pages ブランチへ公開
-bash scripts/tbp.sh sync-master   # README.md を master へ同期
+bash scripts/tbp.sh sync-master   # README.md と LICENSE を master へ同期
 ```
 
 ## 構成
